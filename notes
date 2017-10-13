@@ -1,0 +1,233 @@
+NOTES
+  \ escapes a string to input a variable
+    print("object \(object.number)")
+  contentView.addSubview for adding to subview within a cell
+  optionals: 
+    var x: Int? means it may be nil or may have a value later
+    to print a value safely:
+      let possibleNumber = "123"
+      var convertedNumber = Int(possibleNumber)
+      Option 1: if convertedNumber != nil {
+                  print(converted number)
+                }
+      Option 2: if let localNumber = convertedNumber {
+                  print(localNumber)
+                }
+  implicit numbers: var x: Int! usually numbers you know will be declared later              
+
+UICOLLECTIONVIEW  
+  VC:
+    func setUpCollectionView() {
+      let layout = UICollectionViewFlowLayout()
+      collectionView = UICollectionView(frame: view.frame, collectionViewLayout: layout) 
+      collectionView.backgroundColor = .black
+      collectionView.dataSource = self
+      collectionView.delegate = self
+      collectionView.register(PostsCollectionViewCell.self, forCellWithReuseIdentifier: "post")
+      view.addSubview(collectionView)
+    }
+  PERFORMING BATCHUPDATES
+    func addMoreImages() {
+      let moreImages = [UIImage(named: "nextPic"), UIImage(named: "lastPic")]
+      posts.append(contentsOf: moreImages)
+      var indexPaths = Array<IndexPath>()
+      for image in moreImages {
+        let index = posts.index(where: {$0 == image})
+        let indexPath = IndexPath(item: index!, section: 0)
+        indexPaths.append(indexPath)
+      }
+      collectionView.performBatchUpdates({ Void in
+        self.collectionView.insertItems(at: indexPaths)
+        self.numImages += 5
+        }, completion: nil)
+    }
+    func deleteLastImage() {
+      var indexPaths = Array<IndexPath>() 
+      indexPaths.append(IndexPath(item: posts.count - 1, section: 0))
+      collectionView.performBatchUpdates({ Void in 
+        self.collectionView.deleteItems(at: indexPaths)
+        self.numImages -= 1
+        }, completion: nil)
+      }
+  EXTENSION:
+    extension VC : UICollectionViewDataSource, UICollectionViewDelegate {
+      func collectionView numberOfSections {
+        return 1
+      }
+      func collectionView numberOfItemsInSection {
+        return posts.count
+      }
+      func cellForItemAt {
+        let cell = collectionView.dequeueReusableCell(with identifier: "post", for: indexPath) as! PostsCollectionViewCell
+        cell.awakeFromNib()
+        cell.delegate = self      >> setting the cells delegate to self
+        return cell
+      }
+      func willDisplay {
+        let postCell = cell as! PostsCollectionViewCell
+        postCell.imageView.image = posts[indexPath.row]
+      }
+      func didSelectItemAt {
+      }
+    }
+    COLLECTIONVIEWCELL:
+    protocol PostCollectionViewCellDelegate {                >> protocol in class of protocol
+      func changeColorOfButton(forCell: PostCollectionViewCell) 
+    }
+    class PostCollectionViewCell: CollectionViewCell {
+      var imageView: UIImageView!
+      var button: UIButton!
+      var delegate: PostCollectionViewCellDelegate? = nil     >> we are declaring the delegate if it exists, currently nil
+      override func awakeFromNib() {
+        setUpViews()
+      }
+      func setUpViews() {
+        imageView = UIImageView(frame: contentView.frame)
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        contentView.addSubview(imageView)
+        button = UIButton(frame: frame)
+        button.backgroundColor = .green
+        button.setTitle("change color", for: .normal)
+        button.layer.cornerRadius = 3
+        button.addTarget(self, action: #selector(self.changeColor), for: .touchUpInside)
+        contentView.addSubview(button)
+      }
+      func changeColor() {
+        print("changing color")
+        delegate?.changeColorOfButton(forCell: self)       >> calls this method of the delegate which is VC
+      }
+    }
+    CONFORM TO DELEGATE: 
+    extension VC: PostCollectionViewCellDelegate {                 >> the delegate is the VC and its method is here
+      func changeColorOfButton(forCell: PostCollectionViewCell) {
+        forCell.button.backgroundColor = .blue
+      }
+    }
+  UITABLEVIEW:
+    func numberOfRows()
+    func cellForRow()
+    func heightForRowAt()
+    func didSelectRowAt()
+    func willDisplay()
+    for 
+  NSUserDefaults:
+    let defaults = UserDefaults.standard
+    defaults.set(25, forKey: "Age")
+    //can setDouble, setFloat, setObject -> defaults.setObject(NSDate(), forKey: "date")
+    let array_get = defaults.object(forKey: "Age") as? Int ?? 
+    defaults.removeObjectForKey("Age")
+  GCD:
+    func getPosts() {
+      dbRef.child("Posts/").observe(.value, with: { snapshot -> Void in
+        if snapshot.exists() {
+          if let postsDict = snapshot.value as? (String: AnyObject) {
+            let retrievedPost = Post(key: key, postDict: postDict) 
+            retrievedPosts.append(retrievedPost)
+          }
+        }
+        DispatchQueue.main.async {
+          //updateUI
+        }
+      }
+    })
+  }
+  FIREBASE:
+    creating user:
+      func signUp(email: String, password: String) {
+        Auth.auth().createUser(withEmail: email, password: password, completion: { (user, error) in
+          if error == nil {
+            let ref = Database.database().reference().child("Users").child((Auth.auth().currentUser?.uid)!)
+            ref.setValue(["name": name, "email": email])
+          } else {
+            print(error?.localizedDescription as Any)
+          }
+        })
+      }
+      user signed in:
+        if Auth.auth().currentUser != nil {
+          performSegue(withIdentifier: "toFeed", sender: self)
+        }
+      logging in user:
+        Auth.auth().signIn(withEmail: email, password: password, completion: {
+          if error == nil {
+            self.performSegue(withIdentifier: "toFeed", sender: self) 
+          } else {
+            print("wrong password/email")
+          }
+        })
+      fetching posts:
+        func fetchPosts(withBlock: @escaping () -> ()) {
+          let ref = Database.database().reference()
+          ref.child("Posts").observe().childAdded, with { (snapshot) in
+            let post = Social(id: snapshot.key, postDict: snapshot.value as! [String: Any]?)
+            VC.posts.append(post)
+            self.postIds.append(snapshot.key)
+            withBlock()
+          })
+        }
+      fetching users:
+        func fetchUser(withBlock: @escaping () -> ()) {
+          let ref = Database.database().reference()
+          ref.child("Users").child((self.auth.currentUser?.uid)!).observeSingleEvent(of: .value, with: { (snapshot) in
+            let user = User(id: snapshot.key, userDict: snapshot.value as! [String : Any]?)
+            self.currentUser = user
+            withBlock()
+           })
+         }
+       creating new post:
+        let imageConverted = UIImageJPEGRepresentation(selectedImageView.image!, 0.9)
+        let storage = Storage.storage().reference().child("postpics/\(keyForPics)")
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+        storage.putData(imageConverted!, metadata: metadata).observe(.success) { (snapshot) in 
+          let url = snapshot.metadata?.downloadURL()?.absoluteString
+          let postToBe = ["title": title, "imageUrl": url!] as [String: Any]
+          let key = self.postsRef.childByAuthoId().key
+          let childUpdates = ["/\(key)/" " postToBe]
+          self.postsRef.updateChildValues(childUpdates)
+        }
+        self.dismiss(animated: true, completion: nil)
+      getting post pic:
+        func getPostPic(withBlock: @escaping () -> ()) {
+        let ref = Storage.storage().reference().child("/postpics/\(id!)")
+        ref.getData(maxSize: 1 * 2048 * 2048, completion: { data, error in
+            if let error = error {
+                print(error)
+            } else {
+                self.image = UIImage(data: data!)
+                withBlock()
+            }
+          })
+        }
+      getting post pic from VC:
+        DispatchQueue.main.async {
+            postSelected.getPostPic {
+                let imageConverted = UIImageJPEGRepresentation(postSelected.image!, 0.09)
+                cell.postImage.image = UIImage(data: imageConverted!)
+            }
+            
+        }
+    NOTIFICATION CENTER:
+      First VC:
+        viewDidLoad() {
+          NotificationCenter.default.addObserver(forName: NSNotification.Name(rawValue: "hi"), object:nil, queue:nil, using:catchNotification)
+        }
+        func catchNotification() {
+          guard let name = notification.userInfo!["name"] else {
+            return
+          }
+          label.text = "\(name)"
+        }
+      Second VC:
+        viewDidLoad() {
+          NotificationCenter.default.addObserver(self, selector: #selector(doThis), name: NSNotificationName(rawValue: "hi"), object: nil)
+        }
+        func doThis() {
+          print("notfied")
+        }
+        func tabToNotifyBack() {
+          NotificationCenter.default.post(name: NSNotification.Name(rawValue: "hi"), object: nil, userInfo: ["name":"Carol"])
+        }
+        
+    
