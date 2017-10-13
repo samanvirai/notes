@@ -258,7 +258,80 @@ UICOLLECTIONVIEW
           .responseJSON { resonse in
             //guard let json = response.result.value as? [String: Any] else {
             //guard response.result.isSuccess else { //handle failure n return} success
-      get retrieves hte data, head retireves the headers of the data, post sends data to the server, put sends data to a specific location provided and delete deletes daya from the specific location provides
+  Notes:
+    opening up webview:
+    let myWebView: UIWebView = UIWebView(frame: CGRect(x: 0, y: 65, width: view.frame.width, height: view.frame.height - 75))
+        let urlStr : NSString = url.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)! as NSString
+        let searchURL : URL = URL(string: urlStr as String)!
+        myWebView.loadRequest(URLRequest(url: searchURL))
+        view.addSubview(myWebView)
+  tab bar:
+    class TabBarOneController: UIViewController {
+      self.title = "tab 2"
+    class VC {}
+    extension UITabBarController, UITabBarControllerDelegate {
+      let tabOne = TabOneViewController()
+        let tabOneBarItem = UITabBarItem(title: "Tab 1", image: UIImage(named: "defaultImage.png"), selectedImage: UIImage(named: "selectedImage.png"))
+        
+        tabOne.tabBarItem = tabOneBarItem
+    }
       
-            
+      get retrieves hte data, head retireves the headers of the data, post sends data to the server, put sends data to a specific location provided and delete deletes daya from the specific location provides
+  PERFORMING BATCHUPDATES
+    func addMoreImages() {
+      let moreImages = [UIImage(named: "nextPic"), UIImage(named: "lastPic")]
+      posts.append(contentsOf: moreImages)
+      var indexPaths = Array<IndexPath>()
+      for image in moreImages {
+        let index = posts.index(where: {$0 == image})
+        let indexPath = IndexPath(item: index!, section: 0)
+        indexPaths.append(indexPath)
+      }
+      collectionView.performBatchUpdates({ Void in
+        self.collectionView.insertItems(at: indexPaths)
+        self.numImages += 5
+        }, completion: nil)
+    }
+    func deleteLastImage() {
+      var indexPaths = Array<IndexPath>() 
+      indexPaths.append(IndexPath(item: posts.count - 1, section: 0))
+      collectionView.performBatchUpdates({ Void in 
+        self.collectionView.deleteItems(at: indexPaths)
+        self.numImages -= 1
+        }, completion: nil)
+      }      
+      COLLECTIONVIEWCELL:
+    protocol PostCollectionViewCellDelegate {                >> protocol in class of protocol
+      func changeColorOfButton(forCell: PostCollectionViewCell) 
+    }
+    class PostCollectionViewCell: CollectionViewCell {
+      var imageView: UIImageView!
+      var button: UIButton!
+      var delegate: PostCollectionViewCellDelegate? = nil     >> we are declaring the delegate if it exists, currently nil
+      override func awakeFromNib() {
+        setUpViews()
+      }
+      func setUpViews() {
+        imageView = UIImageView(frame: contentView.frame)
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        contentView.addSubview(imageView)
+        button = UIButton(frame: frame)
+        button.backgroundColor = .green
+        button.setTitle("change color", for: .normal)
+        button.layer.cornerRadius = 3
+        button.addTarget(self, action: #selector(self.changeColor), for: .touchUpInside)
+        contentView.addSubview(button)
+      }
+      func changeColor() {
+        print("changing color")
+        delegate?.changeColorOfButton(forCell: self)       >> calls this method of the delegate which is VC
+      }
+    }
+    CONFORM TO DELEGATE: 
+    extension VC: PostCollectionViewCellDelegate {                 >> the delegate is the VC and its method is here
+      func changeColorOfButton(forCell: PostCollectionViewCell) {
+        forCell.button.backgroundColor = .blue
+      }
+    }            
     
