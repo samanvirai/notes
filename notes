@@ -13,8 +13,31 @@ NOTES
       Option 2: if let localNumber = convertedNumber {
                   print(localNumber)
                 }
-  implicit numbers: var x: Int! usually numbers you know will be declared later              
-
+  implicit numbers: var x: Int! usually numbers you know will be declared later
+  passing through segue:
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+         if segue.identifier == "toWeb" {
+            let webVC = segue.destination as! WebViewController
+            webVC.url = "https://darksky.net/poweredby/"
+         }
+    }
+  opening up webview:
+    let myWebView: UIWebView = UIWebView(frame: CGRect(x: 0, y: 65, width: view.frame.width, height: view.frame.height - 75))
+        let urlStr : NSString = url.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed)! as NSString
+        let searchURL : URL = URL(string: urlStr as String)!
+        myWebView.loadRequest(URLRequest(url: searchURL))
+        view.addSubview(myWebView)
+  tab bar:
+    class TabBarOneController: UIViewController {
+      self.title = "tab 2"
+    class VC {}
+    extension UITabBarController, UITabBarControllerDelegate {
+      let tabOne = TabOneViewController()
+        let tabOneBarItem = UITabBarItem(title: "Tab 1", image: UIImage(named: "defaultImage.png"), selectedImage: UIImage(named: "selectedImage.png"))
+        
+        tabOne.tabBarItem = tabOneBarItem
+    }
+      
 UICOLLECTIONVIEW  
   VC:
     func setUpCollectionView() {
@@ -229,5 +252,13 @@ UICOLLECTIONVIEW
         func tabToNotifyBack() {
           NotificationCenter.default.post(name: NSNotification.Name(rawValue: "hi"), object: nil, userInfo: ["name":"Carol"])
         }
-        
+     ALAMOFIRE:
+      .get specifies its the http method
+        Alamofire.request(todoEndpoint, method: .get) 
+          .responseJSON { resonse in
+            //guard let json = response.result.value as? [String: Any] else {
+            //guard response.result.isSuccess else { //handle failure n return} success
+      get retrieves hte data, head retireves the headers of the data, post sends data to the server, put sends data to a specific location provided and delete deletes daya from the specific location provides
+      
+            
     
